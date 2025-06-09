@@ -1,4 +1,4 @@
-# 媒体工作坊后端服务
+# minco 后端服务
 
 基于FastAPI的媒体文件处理服务。
 
@@ -26,5 +26,3 @@ uvicorn main:app --reload
 
 - 登录: POST /auth/login
 - 登出: POST /auth/logout
-- 上传文件: POST /upload-file
-- 批量上传: POST /upload-files 
