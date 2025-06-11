@@ -25,3 +25,13 @@ class FileUploadResponse(BaseModel):
     """文件上传响应"""
     endpoint: Optional[str] = None
     endpoints: Optional[List[str]] = None
+
+class TestConnectRequestDto(BaseModel):
+    """测试连接请求"""
+    uuid: Optional[str] = None
+
+class TestConnectResponseDto(BaseModel):
+    """测试连接响应"""
+    status: str
+    message: str
+    uuid: Optional[str] = None

@@ -39,5 +39,17 @@ app.add_middleware(
 )
 
 auth_router = APIRouter(dependencies=[Depends(JWTAuthBearer())])
+
+@app.get("/")
+async def root():
+    """根路径，返回API基本信息"""
+    return {
+        "message": "欢迎使用 minco BE API",
+        "version": "0.0.1",
+        "docs": "/docs",
+        "redoc": "/redoc",
+        "api_prefix": "/api/v1"
+    }
+
 app.include_router(router=api_router, prefix="/api/v1", tags=["账号管理"])
 app.include_router(router=auth_api_router, prefix="/api/v1", tags=["账号管理"])

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 import uuid
-from models import ApiResponse, AuthResponseDto, LoginRequestDto
+from models import ApiResponse, AuthResponseDto, LoginRequestDto, TestConnectRequestDto, TestConnectResponseDto
 from service import auth_service
 from auth.jwt_auth import JWTAuthBearer
 from util.logging import logger
@@ -50,3 +50,18 @@ async def user_logout():
     user = await auth_service.get_login_user()
     logger.info(f"user logout, user: {user.id}")
     return api_response(data=[])
+
+# 测试相关路由
+@router.post(
+    "/test/connect_test",
+    name="测试连接接口",
+    response_model=ApiResponse[TestConnectResponseDto],
+)
+async def test_connect(data: TestConnectRequestDto):
+    """测试连接"""
+    response_data = TestConnectResponseDto(
+        status="success",
+        message="Connection successful",
+        uuid=data.uuid
+    )
+    return api_response(data=response_data)
