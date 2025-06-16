@@ -13,6 +13,7 @@
 - **📦 数据格式**: JSON
 - **⏰ Token有效期**: 30分钟
 - **🔒 密码要求**: 最少6个字符
+- **🔧 Token字段**: 包含 `iss`, `aud`, `jti`, `sub`, `exp`, `key` 等完整认证信息
 
 ### 统一响应格式
 ```json
@@ -31,8 +32,10 @@
 | 接口 | 方法 | URL | 认证 | 实现状态 | 描述 |
 |------|------|-----|------|----------|------|
 | 用户注册 | POST | `/auth/register` | ❌ | ✅ | 用户注册账号（密码≥6字符） |
-| 用户登录 | POST | `/auth/login` | ❌ | ✅ | 用户登录获取访问令牌 |
+| 用户登录 | POST | `/auth/login` | ❌ | ✅ | 用户登录获取完整JWT令牌 |
 | 用户登出 | POST | `/auth/logout` | ✅ | ✅ | 用户登出系统 |
+
+> **🔒 JWT Token 增强**: 登录/注册生成的Token现在包含完整的认证字段（`iss`, `aud`, `jti`, `key`），确保所有认证接口正常工作
 
 ### 🔧 系统测试
 | 接口 | 方法 | URL | 认证 | 实现状态 | 描述 |
@@ -473,7 +476,48 @@ async function quickTest() {
 - **📋 完整接口文档**: [API接口文档.md](./API接口文档.md)
 - **📚 项目说明**: [README.md](./README.md)
 
+## ⚠️ 故障排查
+
+### 🔐 常见认证问题
+
+#### 401 Unauthorized 错误解决
+如果遇到认证失败，请按以下步骤排查：
+
+1. **检查Token格式**:
+   ```javascript
+   // ✅ 正确格式
+   headers: {
+       'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIs...'
+   }
+   
+   // ❌ 错误格式
+   headers: {
+       'Authorization': 'eyJhbGciOiJIUzI1NiIs...'  // 缺少Bearer
+   }
+   ```
+
+2. **Token过期检查**:
+   - Token有效期为30分钟
+   - 过期后需要重新登录获取新Token
+
+3. **使用新登录的Token**:
+   - **重要**: 请使用最新登录获取的Token
+   - 新Token包含完整的认证字段，解决了之前的401问题
+
+4. **验证Token完整性**:
+   ```javascript
+   // 检查Token是否包含必要字段
+   const payload = JSON.parse(atob(token.split('.')[1]));
+   console.log('Token payload:', payload);
+   // 应包含: jti, sub, iss, aud, iat, exp, key 等字段
+   ```
+
+#### 最近修复
+- **🔧 JWT Token增强** (2025-06-16): 修复了Token生成逻辑，现在包含所有必需的认证字段
+- **📋 详细错误日志**: 增强了认证失败时的错误信息，便于调试
+- **🛡️ 认证中间件优化**: 改进了JWT验证过程，提供更准确的错误提示
+
 ---
 
 **📝 文档状态**: ✅ 已完成核心功能实现  
-**🔄 最后同步**: 2024年12月 - 密码验证加强版本 
+**🔄 最后同步**: 2025年6月16日 - JWT认证增强版本 
