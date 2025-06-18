@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, JSON
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, JSON, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
@@ -59,11 +59,22 @@ class TaskModel(Base):
     """任务表"""
     __tablename__ = "tasks"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(String(36), primary_key=True)  # 使用UUID作为主键
     user_id = Column(Integer, nullable=False)
-    title = Column(String(255))
+    title = Column(String(255), nullable=False)
     description = Column(Text)
-    status = Column(Integer, nullable=False, default=1)
+    emoji = Column(String(10))
+    category_id = Column(Integer, nullable=False)
+    project_id = Column(String(36))
+    start_time = Column(DateTime)
+    end_time = Column(DateTime)
+    estimated_duration = Column(Integer)  # 估计持续时间（分钟）
+    time_slot_id = Column(Integer)
+    priority = Column(Integer, nullable=False, default=3)  # 优先级 1-5
+    status_id = Column(Integer, nullable=False, default=1)  # 状态ID
+    is_overdue = Column(Boolean, default=False)  # 是否过期
+    sub_tasks = Column(JSON)  # 子任务列表
+    completed_at = Column(DateTime)  # 完成时间
     created_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"))
     updated_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"), server_onupdate=text("CURRENT_TIMESTAMP"))
 

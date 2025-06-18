@@ -13,7 +13,7 @@ from models import (
     FocusStartDto, FocusStartResponseDto, FocusEndDto, FocusSessionDto,
     UserDto
 )
-from service import auth_service
+from service import auth_service, task_service
 from auth.jwt_auth import JWTAuthBearer
 from util.logging import logger, api_logger
 
@@ -307,30 +307,17 @@ async def create_task(data: TaskCreateDto, request: Request):
     try:
         logger.info(f"[{request_id}] 开始创建事项，标题: {data.title}, 分类: {data.category_id}")
         
-        # 模拟创建事项
-        task_id = str(uuid.uuid4())
-        current_time = datetime.now().isoformat() + "Z"
+        # 获取当前登录用户
+        current_user = await auth_service.get_login_user()
+        if not current_user:
+            logger.warning(f"[{request_id}] 创建事项失败，用户未登录")
+            return api_response(data=None, code=401, message="用户未登录", status_code=401)
         
-        task = TaskDto(
-            id=task_id,
-            title=data.title,
-            description=data.description,
-            emoji=data.emoji,
-            category_id=data.category_id,
-            project_id=data.project_id,
-            start_time=data.start_time,
-            end_time=data.end_time,
-            estimated_duration=data.estimated_duration,
-            time_slot_id=data.time_slot_id,
-            priority=data.priority,
-            status_id=data.status_id or 1,
-            sub_tasks=data.sub_tasks or [],
-            created_at=current_time,
-            updated_at=current_time
-        )
+        # 创建事项
+        task = await task_service.create_task(current_user.id, data)
         
         duration_ms = (time.time() - start_time) * 1000
-        logger.info(f"[{request_id}] 事项创建成功，任务ID: {task.id}, 用时: {duration_ms:.2f}ms")
+        logger.info(f"[{request_id}] 事项创建成功，用户ID: {current_user.id}, 任务ID: {task.id}, 用时: {duration_ms:.2f}ms")
         
         api_logger.log_response(
             endpoint=endpoint,
@@ -405,56 +392,35 @@ async def get_tasks(
     try:
         logger.info(f"[{request_id}] 开始获取事项列表，分类: {category_id}, 状态: {status_id}, 页码: {page}")
         
-        # 模拟数据
-        mock_tasks = [
-            TaskDto(
-                id=str(uuid.uuid4()),
-                title="完成项目文档",
-                description="编写详细的API文档",
-                emoji="📝",
-                category_id=3,  # 工作
-                priority=4,
-                status_id=1,  # pending
-                created_at=datetime.now().isoformat() + "Z",
-                updated_at=datetime.now().isoformat() + "Z"
-            ),
-            TaskDto(
-                id=str(uuid.uuid4()),
-                title="健身锻炼",
-                description="有氧运动30分钟",
-                emoji="💪",
-                category_id=2,  # 健康
-                priority=3,
-                status_id=1,
-                created_at=datetime.now().isoformat() + "Z",
-                updated_at=datetime.now().isoformat() + "Z"
-            )
-        ]
+        # 获取当前登录用户
+        current_user = await auth_service.get_login_user()
+        if not current_user:
+            logger.warning(f"[{request_id}] 获取事项列表失败，用户未登录")
+            return api_response(data=None, code=401, message="用户未登录", status_code=401)
         
-        # 应用筛选逻辑（简化示例）
-        filtered_tasks = mock_tasks
-        if category_id:
-            filtered_tasks = [t for t in filtered_tasks if t.category_id == category_id]
-        if status_id:
-            filtered_tasks = [t for t in filtered_tasks if t.status_id == status_id]
-        
-        response_data = TaskListResponseDto(
-            items=filtered_tasks,
-            pagination={
-                "total_items": len(filtered_tasks),
-                "total_pages": 1,
-                "current_page": page,
-                "limit": limit
-            }
+        # 从数据库查询事项列表
+        response_data = await task_service.get_tasks(
+            user_id=current_user.id,
+            date=date,
+            project_id=project_id,
+            category_id=category_id,
+            status_id=status_id,
+            priority=priority,
+            is_completed=is_completed,
+            time_slot_id=time_slot_id,
+            sort_by=sort_by,
+            order=order,
+            page=page,
+            limit=limit
         )
         
         duration_ms = (time.time() - start_time) * 1000
-        logger.info(f"[{request_id}] 事项列表获取成功，返回 {len(filtered_tasks)} 个事项, 用时: {duration_ms:.2f}ms")
+        logger.info(f"[{request_id}] 事项列表获取成功，用户ID: {current_user.id}, 返回 {len(response_data.items)} 个事项, 用时: {duration_ms:.2f}ms")
         
         api_logger.log_response(
             endpoint=endpoint,
             status_code=200,
-            response_data={"items_count": len(filtered_tasks), "pagination": response_data.pagination},
+            response_data={"items_count": len(response_data.items), "pagination": response_data.pagination},
             request_id=request_id,
             duration_ms=duration_ms
         )
@@ -481,20 +447,25 @@ async def get_tasks(
 )
 async def get_task(item_id: str = Path(..., description="事项ID")):
     """获取单个事项详情"""
-    # 模拟获取事项
-    task = TaskDto(
-        id=item_id,
-        title="示例事项",
-        description="这是一个示例事项的详细描述",
-        emoji="📋",
-        category_id=1,
-        priority=3,
-        status_id=1,
-        created_at=datetime.now().isoformat() + "Z",
-        updated_at=datetime.now().isoformat() + "Z"
-    )
-    
-    return api_response(data=task)
+    try:
+        # 获取当前登录用户
+        current_user = await auth_service.get_login_user()
+        if not current_user:
+            logger.warning(f"获取事项详情失败，用户未登录，事项ID: {item_id}")
+            return api_response(data=None, code=401, message="用户未登录", status_code=401)
+        
+        # 从数据库获取事项
+        task = await task_service.get_task_by_id(current_user.id, item_id)
+        if not task:
+            logger.warning(f"事项不存在或无权访问，用户ID: {current_user.id}, 事项ID: {item_id}")
+            return api_response(data=None, code=404, message="事项不存在", status_code=404)
+        
+        logger.info(f"成功获取事项详情，用户ID: {current_user.id}, 事项ID: {item_id}")
+        return api_response(data=task)
+        
+    except Exception as e:
+        logger.error(f"获取事项详情失败，事项ID: {item_id}, 错误: {str(e)}")
+        return api_response(data=None, code=500, message=str(e), status_code=500)
 
 @auth_router.put(
     "/items/{item_id}",

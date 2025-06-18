@@ -6,116 +6,108 @@
 """
 
 import sys
-from mysql_client import create_tables, drop_tables, get_db_session, UserModel
-from util.logging import logger
+import os
+from datetime import datetime
 
-def backup_users():
-    """备份现有用户数据"""
-    try:
-        with get_db_session() as db:
-            users = db.query(UserModel).all()
-            backup_data = []
-            for user in users:
-                backup_data.append({
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'password': user.password,
-                    'status': user.status,
-                    'created_at': user.created_at
-                })
-            return backup_data
-    except Exception as e:
-        logger.warning(f"Failed to backup users (table might not exist): {e}")
-        return []
+# 添加项目根目录到Python路径
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from mysql_client import create_tables, drop_tables, get_db_session, engine
+from sqlalchemy import text
+from util.logging import logger
 
 def migrate_database():
     """执行数据库迁移"""
     try:
         logger.info("开始数据库迁移...")
         
-        # 1. 尝试备份现有数据
-        logger.info("正在备份现有用户数据...")
-        backup_data = backup_users()
-        logger.info(f"备份了 {len(backup_data)} 个用户")
-        
-        # 2. 删除现有表
-        logger.info("正在删除现有表...")
-        drop_tables()
-        logger.info("现有表已删除")
-        
-        # 3. 创建新表结构
-        logger.info("正在创建新表结构...")
+        # 创建所有表
         create_tables()
-        logger.info("新表结构已创建")
+        logger.info("数据库表创建成功")
         
-        # 4. 恢复用户数据（仅基础字段）
-        if backup_data:
-            logger.info("正在恢复用户数据...")
-            with get_db_session() as db:
-                for user_data in backup_data:
-                    new_user = UserModel(
-                        username=user_data['username'],
-                        email=user_data['email'],
-                        password=user_data['password'],
-                        status=user_data['status'],
-                        created_at=user_data['created_at'],
-                        # 新字段使用默认值
-                        full_name=None,
-                        avatar=None,
-                        personal_tags=None,
-                        long_term_goals=None,
-                        recent_focus=None,
-                        daily_plan_time="08:00",
-                        daily_review_time="22:00",
-                        timezone="Asia/Shanghai"
-                    )
-                    db.add(new_user)
-                db.commit()
-            logger.info(f"恢复了 {len(backup_data)} 个用户")
+        # 验证表是否创建成功
+        with get_db_session() as db:
+            # 检查用户表
+            result = db.execute(text("SHOW TABLES LIKE 'users'"))
+            if result.fetchone():
+                logger.info("✅ 用户表 (users) 创建成功")
+            else:
+                logger.error("❌ 用户表 (users) 创建失败")
+                
+            # 检查任务表
+            result = db.execute(text("SHOW TABLES LIKE 'tasks'"))
+            if result.fetchone():
+                logger.info("✅ 任务表 (tasks) 创建成功")
+                
+                # 显示任务表结构
+                result = db.execute(text("DESCRIBE tasks"))
+                columns = result.fetchall()
+                logger.info("任务表结构:")
+                for column in columns:
+                    logger.info(f"  {column[0]} - {column[1]} - {column[2]} - {column[3]} - {column[4]} - {column[5]}")
+            else:
+                logger.error("❌ 任务表 (tasks) 创建失败")
         
-        logger.info("数据库迁移完成！")
+        logger.info("数据库迁移完成")
         return True
         
     except Exception as e:
-        logger.error(f"数据库迁移失败: {e}")
+        logger.error(f"数据库迁移失败: {str(e)}")
         return False
 
-def confirm_migration():
-    """确认迁移操作"""
-    print("⚠️  警告：此操作将删除所有现有数据库表并重新创建！")
-    print("📋 操作内容：")
-    print("   1. 备份现有用户数据")
-    print("   2. 删除所有现有表")
-    print("   3. 创建新的表结构")
-    print("   4. 恢复用户基础数据")
-    print()
-    
-    while True:
-        confirm = input("是否继续？请输入 'yes' 确认，'no' 取消: ").lower().strip()
-        if confirm in ['yes', 'y']:
-            return True
-        elif confirm in ['no', 'n']:
-            return False
-        else:
-            print("请输入 'yes' 或 'no'")
+def reset_database():
+    """重置数据库 - 删除所有表并重新创建"""
+    try:
+        logger.warning("开始重置数据库 (将删除所有数据)...")
+        
+        # 删除所有表
+        drop_tables()
+        logger.info("已删除所有表")
+        
+        # 重新创建表
+        return migrate_database()
+        
+    except Exception as e:
+        logger.error(f"数据库重置失败: {str(e)}")
+        return False
+
+def check_database_connection():
+    """检查数据库连接"""
+    try:
+        logger.info("检查数据库连接...")
+        
+        with get_db_session() as db:
+            result = db.execute(text("SELECT 1"))
+            if result.fetchone():
+                logger.info("✅ 数据库连接正常")
+                return True
+            else:
+                logger.error("❌ 数据库连接失败")
+                return False
+                
+    except Exception as e:
+        logger.error(f"数据库连接检查失败: {str(e)}")
+        return False
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--force":
-        # 强制执行，不需要确认
-        success = migrate_database()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="数据库迁移工具")
+    parser.add_argument("--reset", action="store_true", help="重置数据库 (删除所有表并重新创建)")
+    parser.add_argument("--check", action="store_true", help="检查数据库连接")
+    
+    args = parser.parse_args()
+    
+    if args.check:
+        success = check_database_connection()
+    elif args.reset:
+        success = reset_database()
     else:
-        # 需要用户确认
-        if confirm_migration():
-            success = migrate_database()
-        else:
-            print("迁移已取消")
-            success = False
+        success = migrate_database()
     
     if success:
-        print("✅ 数据库迁移成功完成！")
-        print("现在可以重新启动服务并测试注册功能")
+        logger.info("操作成功完成")
         sys.exit(0)
     else:
-        print("❌ 数据库迁移失败")
+        logger.error("操作失败")
         sys.exit(1) 
