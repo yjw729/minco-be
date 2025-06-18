@@ -212,7 +212,7 @@
 }
 ```
 
-**响应体** (HTTP 201 Created):
+**成功响应** (HTTP 201 Created):
 ```json
 {
   "code": 0,
@@ -238,6 +238,30 @@
 }
 ```
 
+**错误响应** (HTTP 401 Unauthorized):
+```json
+{
+  "code": 401,
+  "message": "用户未登录",
+  "data": null
+}
+```
+
+**错误响应** (HTTP 500 Internal Server Error):
+```json
+{
+  "code": 500,
+  "message": "事项创建失败" | "服务器内部错误",
+  "data": null
+}
+```
+
+**常见创建事项错误**:
+- `标题不能为空`: 事项标题为空
+- `分类ID无效`: category_id不在有效范围内
+- `优先级无效`: priority不在1-5范围内
+- `时间格式错误`: start_time或end_time格式不正确
+
 #### 1.2 获取事项列表
 
 **功能说明**: 获取用户的事项列表，支持多种筛选条件，用于时间轴、项目内事项列表等场景。
@@ -262,7 +286,7 @@
 - `page`: integer (页码，用于分页，默认1)
 - `limit`: integer (每页数量，用于分页，默认20)
 
-**响应体** (HTTP 200 OK):
+**成功响应** (HTTP 200 OK):
 ```json
 {
   "code": 0,
@@ -290,6 +314,24 @@
 }
 ```
 
+**错误响应** (HTTP 401 Unauthorized):
+```json
+{
+  "code": 401,
+  "message": "用户未登录",
+  "data": null
+}
+```
+
+**错误响应** (HTTP 500 Internal Server Error):
+```json
+{
+  "code": 500,
+  "message": "获取事项列表失败" | "服务器内部错误",
+  "data": null
+}
+```
+
 #### 1.3 获取单个事项详情
 
 **功能说明**: 获取指定ID事项的详细信息，对应产品文档中"点击事项卡片查看事项详情"。
@@ -304,7 +346,7 @@
 **路径参数**:
 - `itemId` (string): 要获取详情的事项的唯一ID
 
-**响应体** (HTTP 200 OK):
+**成功响应** (HTTP 200 OK):
 ```json
 {
   "code": 0,
@@ -328,6 +370,33 @@
     "updated_at": "string",
     "completed_at": "string"
   }
+}
+```
+
+**错误响应** (HTTP 401 Unauthorized):
+```json
+{
+  "code": 401,
+  "message": "用户未登录",
+  "data": null
+}
+```
+
+**错误响应** (HTTP 404 Not Found):
+```json
+{
+  "code": 404,
+  "message": "事项不存在",
+  "data": null
+}
+```
+
+**错误响应** (HTTP 500 Internal Server Error):
+```json
+{
+  "code": 500,
+  "message": "获取事项详情失败" | "服务器内部错误",
+  "data": null
 }
 ```
 
@@ -364,7 +433,7 @@
 }
 ```
 
-**响应体** (HTTP 200 OK):
+**成功响应** (HTTP 200 OK):
 ```json
 {
   "code": 0,
@@ -390,6 +459,33 @@
 }
 ```
 
+**错误响应** (HTTP 401 Unauthorized):
+```json
+{
+  "code": 401,
+  "message": "用户未登录",
+  "data": null
+}
+```
+
+**错误响应** (HTTP 404 Not Found):
+```json
+{
+  "code": 404,
+  "message": "事项不存在",
+  "data": null
+}
+```
+
+**错误响应** (HTTP 500 Internal Server Error):
+```json
+{
+  "code": 500,
+  "message": "更新事项失败" | "服务器内部错误",
+  "data": null
+}
+```
+
 #### 1.7 删除事项
 
 **功能说明**: 删除一个事项，对应产品文档中时间轴的左滑删除功能。
@@ -404,7 +500,34 @@
 **路径参数**:
 - `itemId` (string): 要删除的事项的唯一ID
 
-**响应体** (HTTP 204 No Content): 成功删除通常无响应体
+**成功响应** (HTTP 204 No Content): 成功删除通常无响应体
+
+**错误响应** (HTTP 401 Unauthorized):
+```json
+{
+  "code": 401,
+  "message": "用户未登录",
+  "data": null
+}
+```
+
+**错误响应** (HTTP 404 Not Found):
+```json
+{
+  "code": 404,
+  "message": "事项不存在",
+  "data": null
+}
+```
+
+**错误响应** (HTTP 500 Internal Server Error):
+```json
+{
+  "code": 500,
+  "message": "删除事项失败" | "服务器内部错误",
+  "data": null
+}
+```
 
 #### 1.8 批量操作事项
 
@@ -716,7 +839,7 @@
 }
 ```
 
-**响应体** (HTTP 200 OK):
+**成功响应** (HTTP 200 OK):
 ```json
 {
   "code": 0,
@@ -738,16 +861,100 @@
   }
 }
 ```
+
+**错误响应** (HTTP 401 Unauthorized):
+```json
+{
+  "code": 401,
+  "message": "用户未登录",
+  "data": null
+}
+```
+
+**错误响应** (HTTP 404 Not Found):
+```json
+{
+  "code": 404,
+  "message": "任务不存在",
+  "data": null
+}
+```
+
+**错误响应** (HTTP 500 Internal Server Error):
+```json
+{
+  "code": 500,
+  "message": "开始专注失败" | "服务器内部错误",
+  "data": null
+}
+```
 #### 4.2 [P0] 结束专注
+
+**功能说明**: 结束专注会话并记录专注结果
+
 - **请求方式**: `POST`
 - **请求地址**: `/focus/{session_id}/end`
+- **请求头**:
+  ```
+  Authorization: Bearer {access_token}
+  Content-Type: application/json
+  ```
+
+**路径参数**:
+- `session_id` (string): 专注会话的唯一ID
 
 **请求体**:
 ```json
 {
-  "actual_duration": 1800,
-  "completed": true,
-  "interruptions": 2
+  "actual_duration": 1800,    // 实际专注时长(秒)
+  "completed": true,          // 是否完成专注
+  "interruptions": 2          // 中断次数
+}
+```
+
+**成功响应** (HTTP 200 OK):
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "string",
+    "task_id": "string",
+    "start_time": "2024-05-24T09:00:00Z",
+    "end_time": "2024-05-24T09:30:00Z",
+    "planned_duration": 1800,
+    "actual_duration": 1500,
+    "mode_id": 1,
+    "completed": true,
+    "interruptions": 2
+  }
+}
+```
+
+**错误响应** (HTTP 401 Unauthorized):
+```json
+{
+  "code": 401,
+  "message": "用户未登录",
+  "data": null
+}
+```
+
+**错误响应** (HTTP 404 Not Found):
+```json
+{
+  "code": 404,
+  "message": "专注会话不存在",
+  "data": null
+}
+```
+
+**错误响应** (HTTP 500 Internal Server Error):
+```json
+{
+  "code": 500,
+  "message": "结束专注失败" | "服务器内部错误",
+  "data": null
 }
 ```
 
@@ -835,7 +1042,7 @@
 }
 ```
 
-**响应体** (HTTP 200 OK):
+**成功响应** (HTTP 200 OK):
 ```json
 {
   "code": 0,
@@ -845,6 +1052,15 @@
     "message": "Connection successful",
     "uuid": "string"  // 返回请求中的uuid
   }
+}
+```
+
+**错误响应** (HTTP 500 Internal Server Error):
+```json
+{
+  "code": 500,
+  "message": "服务器内部错误" | "连接测试失败",
+  "data": null
 }
 ```
 
@@ -874,7 +1090,7 @@
 }
 ```
 
-**响应体** (HTTP 201 Created):
+**成功响应** (HTTP 201 Created):
 ```json
 {
   "code": 0,
@@ -900,6 +1116,22 @@
   }
 }
 ```
+
+**错误响应** (HTTP 400 Bad Request):
+```json
+{
+  "code": 400,
+  "message": "用户名已存在" | "邮箱已被注册" | "密码长度不足" | "邮箱格式不正确",
+  "data": null
+}
+```
+
+**常见注册错误**:
+- `用户名已存在`: 用户名重复
+- `邮箱已被注册`: 邮箱重复
+- `密码长度不足`: 密码少于8个字符
+- `邮箱格式不正确`: 邮箱格式验证失败
+- `用户名长度必须在3-20字符之间`: 用户名长度不符合要求
 
 #### 5.1.1 [P1] 检查用户名/邮箱可用性
 
@@ -992,12 +1224,11 @@
 ```json
 {
   "username": "string",    // 用户名或邮箱 (必填)
-  "password": "string",    // 密码 (必填, 8-50字符)
-  "remember_me": boolean   // 是否记住登录状态 (可选, 默认false)
+  "password": "string"     // 密码 (必填)
 }
 ```
 
-**响应体** (HTTP 200 OK):
+**成功响应** (HTTP 200 OK):
 ```json
 {
   "code": 0,
@@ -1011,14 +1242,21 @@
 }
 ```
 
-**错误响应**:
+**错误响应** (HTTP 400 Bad Request):
 ```json
 {
   "code": 400,
-  "message": "用户名或密码错误",
+  "message": "用户名或密码错误" | "用户不存在" | "密码错误" | "账户已被禁用",
   "data": null
 }
 ```
+
+**常见登录错误**:
+- `用户名或密码错误`: 登录凭据不匹配
+- `用户不存在`: 用户名/邮箱未注册
+- `密码错误`: 密码不正确
+- `账户已被禁用`: 账户被管理员禁用
+- `请求参数不能为空`: 用户名或密码为空
 
 **JWT Token结构说明**:
 生成的JWT Token包含以下完整字段：
@@ -1035,6 +1273,45 @@
 }
 ```
 
+#### 5.1.4 [P0] 用户登出
+
+**功能说明**: 用户登出，清除认证状态
+
+- **请求方式**: `POST`
+- **请求地址**: `/auth/logout`
+- **请求头**:
+  ```
+  Authorization: Bearer {access_token}
+  Content-Type: application/json
+  ```
+
+**成功响应** (HTTP 200 OK):
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": []
+}
+```
+
+**错误响应** (HTTP 400 Bad Request):
+```json
+{
+  "code": 400,
+  "message": "登出失败" | "Token无效",
+  "data": null
+}
+```
+
+**错误响应** (HTTP 401 Unauthorized):
+```json
+{
+  "code": 401,
+  "message": "用户未登录",
+  "data": null
+}
+```
+
 **注意事项**:
 1. 注册和登录成功后，客户端应保存 `access_token` 用于后续请求的认证
 2. 所有需要认证的接口都应在请求头中携带token: `Authorization: Bearer {access_token}`
@@ -1044,8 +1321,46 @@
 6. **Token完整性**: 新的Token包含所有必需的认证字段，确保401错误得到解决
 
 #### 5.2 [P0] 获取用户信息
+
+**功能说明**: 获取当前登录用户的基础信息
+
 - **请求方式**: `GET`
 - **请求地址**: `/user/profile`
+- **请求头**:
+  ```
+  Authorization: Bearer {access_token}
+  ```
+
+**成功响应** (HTTP 200 OK):
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "string",
+    "username": "string",
+    "email": "string",
+    "full_name": "string",
+    "avatar": "string",
+    "personal_tags": ["string"],
+    "long_term_goals": ["string"],
+    "recent_focus": ["string"],
+    "daily_plan_time": "08:00",
+    "daily_review_time": "22:00",
+    "timezone": "Asia/Shanghai",
+    "created_at": "2024-05-24T09:00:00Z"
+  }
+}
+```
+
+**错误响应** (HTTP 401 Unauthorized):
+```json
+{
+  "code": 401,
+  "message": "用户未登录",
+  "data": null
+}
+```
 
 #### 5.3 [P2] 更新用户设置
 - **请求方式**: `PUT`
@@ -1150,7 +1465,7 @@
 
 ```json
 {
-  "code": 400,              // 业务错误码 (非0表示错误)
+  "code": 400,              // 业务错误码 (非0表示错误，与HTTP状态码一致)
   "message": "请求参数错误",   // 错误描述信息
   "data": null              // 错误时data为null
 }
@@ -1158,37 +1473,56 @@
 
 ### HTTP状态码与业务错误码对应
 
-| HTTP状态码 | 业务错误码 | 说明 |
-|-----------|----------|------|
-| 200 | 0 | 请求成功 |
-| 201 | 0 | 创建成功 |
-| 400 | 400 | 请求参数错误 |
-| 401 | 401 | 未授权/认证失败 |
-| 403 | 403 | 禁止访问 |
-| 404 | 404 | 资源不存在 |
-| 500 | 500 | 服务器内部错误 |
+| HTTP状态码 | 业务错误码 | 说明 | 常见场景 |
+|-----------|----------|------|----------|
+| 200 | 0 | 请求成功 | 正常获取数据、操作成功 |
+| 201 | 0 | 创建成功 | 注册成功、创建事项成功 |
+| 204 | - | 无内容 | 删除成功（无返回内容） |
+| 400 | 400 | 请求参数错误 | 登录失败、注册参数错误、表单验证失败 |
+| 401 | 401 | 未授权/认证失败 | Token无效、用户未登录 |
+| 403 | 403 | 禁止访问 | 无权限访问资源 |
+| 404 | 404 | 资源不存在 | 事项不存在、用户不存在、会话不存在 |
+| 500 | 500 | 服务器内部错误 | 数据库连接失败、系统异常 |
 
 ### 常见错误示例
 
-#### 参数错误
+#### 登录认证错误 (HTTP 400)
 ```json
 {
   "code": 400,
-  "message": "标题不能为空",
-  "data": null
-}
-```
-
-#### 认证失败
-```json
-{
-  "code": 401,
   "message": "用户名或密码错误",
   "data": null
 }
 ```
 
-#### 服务器错误
+#### 注册参数错误 (HTTP 400)
+```json
+{
+  "code": 400,
+  "message": "用户名已存在",
+  "data": null
+}
+```
+
+#### 未登录错误 (HTTP 401)
+```json
+{
+  "code": 401,
+  "message": "用户未登录",
+  "data": null
+}
+```
+
+#### 资源不存在 (HTTP 404)
+```json
+{
+  "code": 404,
+  "message": "事项不存在",
+  "data": null
+}
+```
+
+#### 服务器错误 (HTTP 500)
 ```json
 {
   "code": 500,
@@ -1196,3 +1530,23 @@
   "data": null
 }
 ```
+
+### 错误码分类说明
+
+#### 认证相关错误
+- `用户名或密码错误`: 登录凭据不正确
+- `用户名已存在`: 注册时用户名重复
+- `邮箱已被注册`: 注册时邮箱重复
+- `用户未登录`: 需要认证的接口未提供有效Token
+- `Token无效`: 提供的Token格式错误或已过期
+
+#### 业务逻辑错误
+- `事项不存在`: 访问的事项ID不存在或无权访问
+- `任务不存在`: 专注功能中引用的任务不存在
+- `专注会话不存在`: 结束专注时会话ID不存在
+- `标题不能为空`: 创建事项时必填字段为空
+
+#### 系统错误
+- `服务器内部错误`: 系统级异常，需要后端日志排查
+- `数据库连接失败`: 数据库访问异常
+- `网络超时`: 请求处理时间过长
